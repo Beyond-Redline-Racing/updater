@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+source /home/debian/workspace/utils/colors
+echo -e '\033[2J\033[u' # clear terminal window
+echo -e "$(cat /home/debian/workspace/utils/art)"
+wdir=`pwd`
+
+
+# Path to resources
+PUB="/home/debian/servers/public/server-data/resources"
+DEV="/home/debian/servers/dev/server-data/resources"
+RACEGM=($PUB/racegm $PUB/racegm_stream)
+
+
+# Resouces path public->dev
+declare -a RESOURCES
+RESOURCES[0]="$PUB/[Cars] $DEV/[Cars]"
+RESOURCES[1]="$PUB/[Scripts]/carsounds $DEV/carsounds"
+
+
+# Functions
+ClearTerm() {
+    echo -e '\033[2J\033[u' # clear terminal window
+    echo -e "$(cat /home/debian/workspace/utils/art)"
+}
+
+WipeCopy() {
+    local paths=($1 $2)
+    local pub=${paths[0]}
+    local dev=${paths[1]}
+    local name=$UGreen${dev##*/}$Color_Off
+
+    echo -e RESOURCE: ${Green}$name;echo
+    
+    echo -en "${On_Red}${BYellow}WIPE$Color_Off $name before copy? [y/n]: ";
+    read -r INPUT;echo
+    if [[ $INPUT == 'y' ]]; then
+        echo -e "${On_Red}Deleting $name${On_Red} from public...$Color_Off";echo
+        sleep 1
+        #echo rm -Rf $pub
+        #rm -Rf $pub
+    fi
+
+    echo -e "Copying $name from dev to public"
+    sleep 1
+    #echo cp -r $dev $pub
+    #cp -r $dev $pub
+}
+
+UpdateGitRepo() {
+    cd $1
+    if [[ -n $(git status --porcelain) ]]; then
+        git status --porcelain
+        read -p "Clean git directory? [y/n]: " -r INPUT
+
+        if [[ $INPUT == 'y' ]]; then
+            sleep 1
+            echo git checkout; echo git clean -f
+            # git checkout
+            # git clean -f
+        fi
+    fi
+    sleep 1
+    echo git pull
+    #git pull
+
+    cd $wdir;
+    ClearTerm
+}
+
+
+# Logic
+## Resources
+for val in ${!RESOURCES[@]}; do
+    WipeCopy ${RESOURCES[$val]}
+    ClearTerm
+done
+
+## Git racegm
+
+for repo in ${RACEGM[@]}; do
+    echo -e RESOURCE: ${Green}${repo##*/}$Color_Off;echo
+    echo -en "Update ${UGreen}${repo##*/}$Color_Off git directory? [y/n]: ";
+    read -r INPUT;echo
+    if [[ $INPUT == 'y' ]]; then
+        UpdateGitRepo $repo
+    fi
+    ClearTerm
+done
+
+
+echo -e ${On_Green}${BWhite}✅ Update completed$Color_Off
